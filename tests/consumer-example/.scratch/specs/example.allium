@@ -1,0 +1,12 @@
+-- allium: 1
+
+requirement "Example Requirement"
+  tags: {"example"}
+
+  description:
+    "This is an example requirement for testing the allium-check script"
+
+  acceptance-criteria:
+    - "Given a test Allium specification"
+    - "When running allium-check"
+    - "Then it should parse this file correctly"
