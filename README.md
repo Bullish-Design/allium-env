@@ -5,6 +5,7 @@ Shared devenv module for Allium support.
 This repo owns:
 
 - the vendored Allium source under `.vendor/allium`
+- bundled local agent skill bundle under `.skills/allium-cli/skills`
 - the pinned Allium CLI package definition
 - reusable devenv scripts:
   - `allium-setup` - initialize or update vendored Allium
@@ -30,7 +31,7 @@ Add this to the consuming project's `devenv.yaml`:
 ```yaml
 inputs:
   allium-dev:
-    url: github:YOUR_ORG/devenv-allium?ref=v0.1.0
+    url: github:YOUR_ORG/devenv-allium?ref=v0.2.0
     flake: false
 
 imports:
@@ -42,7 +43,7 @@ For a private GitHub repository over SSH:
 ```yaml
 inputs:
   allium-dev:
-    url: git+ssh://git@github.com/YOUR_ORG/devenv-allium.git?ref=v0.1.0
+    url: git+ssh://git@github.com/YOUR_ORG/devenv-allium.git?ref=v0.2.0
     flake: false
 
 imports:
@@ -66,6 +67,11 @@ Enter the shell and install skills:
 devenv shell
 allium-install-codex-skills
 ```
+
+This installs:
+
+- selected vendored skills from `.vendor/allium/skills`
+- bundled local CLI skills from `.skills/allium-cli/skills`
 
 Run Allium checks:
 
@@ -160,4 +166,4 @@ For unsupported platforms, consuming projects can:
 - `allium.codexSkills.enable` - Provide `allium-install-codex-skills` script (default: `true`)
 - `allium.codexSkills.autoInstall` - Auto-install skills on shell entry (default: `false`)
 - `allium.codexSkills.targetDir` - Where to install skills (default: `.agents/skills`)
-- `allium.codexSkills.skills` - List of skill directories to install
+- `allium.codexSkills.skills` - List of vendored skill directories to install from `.vendor/allium/skills`

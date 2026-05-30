@@ -1,0 +1,22 @@
+{
+  "package": "allium-cli-agent-skills",
+  "assumptions": [
+    "allium CLI is already installed and working",
+    "skills operate on folders of .allium spec files",
+    "commands are run against resolved entrypoint files, not directories"
+  ],
+  "skills": [
+    "allium-cli-project-conventions",
+    "allium-cli-overview",
+    "allium-cli-command-reference",
+    "allium-cli-check",
+    "allium-cli-analyse",
+    "allium-cli-parse",
+    "allium-cli-model",
+    "allium-cli-plan",
+    "allium-cli-diagnostics-repair",
+    "allium-cli-output-interpretation",
+    "allium-cli-agent-runbooks",
+    "allium-cli-ci-and-quality-gates"
+  ]
+}

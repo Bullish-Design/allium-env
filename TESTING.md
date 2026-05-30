@@ -7,7 +7,7 @@ This document summarizes the tests performed on the `devenv-allium` shared repos
 - **Shared Repo**: `/home/andrew/Documents/Projects/allium-env`
 - **Consumer Test Project**: `/tmp/allium-consumer-test`
 - **Consumer Example (in repo)**: `tests/consumer-example/`
-- **Test Date**: 2026-05-29
+- **Test Date**: 2026-05-30
 
 ## Shared Repository Setup
 
@@ -16,7 +16,7 @@ This document summarizes the tests performed on the `devenv-allium` shared repos
 - **Result**: ✓ Success
 - **Details**:
   - Vendored Allium at commit `82da292e989d518f79189fdfef4446d0d517c277`
-  - All 6 skill directories verified:
+  - All 6 vendored skill directories verified:
     - `.vendor/allium/skills/allium/SKILL.md`
     - `.vendor/allium/skills/distill/SKILL.md`
     - `.vendor/allium/skills/elicit/SKILL.md`
@@ -71,6 +71,9 @@ This document summarizes the tests performed on the `devenv-allium` shared repos
 - **Installed Skills**:
   ```
   .agents/skills/allium/SKILL.md
+  .agents/skills/allium-cli-overview/SKILL.md
+  .agents/skills/allium-cli-check/SKILL.md
+  .agents/skills/allium-cli-analyse/SKILL.md
   .agents/skills/distill/SKILL.md
   .agents/skills/elicit/SKILL.md
   .agents/skills/propagate/SKILL.md
@@ -80,10 +83,14 @@ This document summarizes the tests performed on the `devenv-allium` shared repos
 - **Output**:
   ```
   Installing Allium skills
-  Source: /nix/store/.../source/.vendor/allium/skills
+  Vendored source: /nix/store/.../source/.vendor/allium/skills
+  Local source: /nix/store/.../source/.skills/allium-cli/skills
   Target: /tmp/allium-consumer-test/.agents/skills
 
   Installed /tmp/allium-consumer-test/.agents/skills/allium
+  Installed /tmp/allium-consumer-test/.agents/skills/allium-cli-overview
+  Installed /tmp/allium-consumer-test/.agents/skills/allium-cli-check
+  Installed /tmp/allium-consumer-test/.agents/skills/allium-cli-analyse
   Installed /tmp/allium-consumer-test/.agents/skills/elicit
   Installed /tmp/allium-consumer-test/.agents/skills/distill
   Installed /tmp/allium-consumer-test/.agents/skills/propagate
@@ -131,6 +138,7 @@ This document summarizes the tests performed on the `devenv-allium` shared repos
 ### Shared Repo
 - ✓ `devenv.nix` - Updated with Allium module
 - ✓ `README.md` - Comprehensive usage documentation
+- ✓ `.skills/allium-cli/skills/` - Bundled detailed Allium CLI skill pack
 - ✓ `.vendor/allium/` - Vendored Allium source (git subtree)
 
 ### Test/Examples
