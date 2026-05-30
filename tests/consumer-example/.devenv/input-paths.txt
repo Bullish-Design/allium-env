@@ -1,0 +1,10 @@
+/home/andrew/Documents/Projects/allium-env/tests/consumer-example/.devenv/bootstrap/bootstrapLib.nix
+/home/andrew/Documents/Projects/allium-env/tests/consumer-example/.devenv/bootstrap/default.nix
+/home/andrew/Documents/Projects/allium-env/tests/consumer-example/.devenv/bootstrap/resolve-lock.nix
+/home/andrew/Documents/Projects/allium-env/tests/consumer-example/devenv.local.nix
+/home/andrew/Documents/Projects/allium-env/tests/consumer-example/devenv.lock
+/home/andrew/Documents/Projects/allium-env/tests/consumer-example/devenv.nix
+/home/andrew/Documents/Projects/allium-env/tests/consumer-example/devenv.yaml
+/home/andrew/.config/nixpkgs/overlays
+/home/andrew/.config/nixpkgs/overlays.nix
+/home/andrew/Documents/Projects/allium-env/tests/consumer-example/.env

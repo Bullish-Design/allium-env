@@ -4,8 +4,6 @@ let
   cfg = config.allium;
 
   alliumSource = ./.vendor/allium;
-  alliumCliSkillBundle = ./.skills/allium-cli;
-  alliumEntrypointSkill = ./.skills/allium-entrypoint;
 
   defaultAlliumSkills = [
     "allium"
@@ -37,7 +35,7 @@ let
   };
 
   system = pkgs.stdenv.hostPlatform.system;
-  systemSupported = builtins.hasAttr system alliumCliRelease;
+  systemSupported = system in alliumCliRelease;
 
   alliumCli =
     if systemSupported then
@@ -84,8 +82,8 @@ in
 
     specsDir = lib.mkOption {
       type = lib.types.str;
-      default = ".scratch/specs/allium";
-      description = "Directory where .allium specification files are stored. Baked into the entrypoint skill so agents know where to read and write specs.";
+      default = ".scratch/specs";
+      description = "Directory containing .allium specification files.";
     };
 
     cli = {
@@ -140,17 +138,35 @@ in
     };
   };
 
-  config = lib.mkIf cfg.enable {
-    packages = lib.optionals (cfg.cli.enable && systemSupported) [
-      cfg.cli.package
-    ];
+  config = lib.mkIf cfg.enable (lib.mkMerge [
+    {
+      packages = lib.optionals (cfg.cli.enable && systemSupported) [
+        cfg.cli.package
+      ];
 
-    scripts.allium-install-codex-skills = lib.mkIf cfg.codexSkills.enable {
-        description = "Install Allium skills into the current repository.";
+      scripts.allium-check = {
+        description = "Run allium check against the configured specs directory.";
+        exec = ''
+          set -euo pipefail
+          allium check ${lib.escapeShellArg cfg.specsDir}
+        '';
+      };
+
+      scripts.allium-analyse = {
+        description = "Run allium analyse against the configured specs directory.";
+        exec = ''
+          set -euo pipefail
+          allium analyse ${lib.escapeShellArg cfg.specsDir}
+        '';
+      };
+    }
+
+    (lib.mkIf cfg.codexSkills.enable {
+      scripts.allium-install-codex-skills = {
+        description = "Install vendored Allium skills into the current repository.";
         packages = [
           pkgs.git
           pkgs.coreutils
-          pkgs.minijinja
         ];
 
         exec = ''
@@ -164,10 +180,6 @@ in
           repo_root="$(git rev-parse --show-toplevel)"
           allium_source=${lib.escapeShellArg (toString alliumSource)}
           allium_skills_dir="$allium_source/skills"
-          allium_cli_skill_bundle=${lib.escapeShellArg (toString alliumCliSkillBundle)}
-          allium_cli_skills_dir="$allium_cli_skill_bundle/skills"
-          allium_entrypoint_source=${lib.escapeShellArg (toString alliumEntrypointSkill)}
-          specs_dir=${lib.escapeShellArg cfg.specsDir}
           codex_skills_dir=${lib.escapeShellArg cfg.codexSkills.targetDir}
 
           case "$codex_skills_dir" in
@@ -182,15 +194,14 @@ in
           mkdir -p "$target_root"
 
           echo "Installing Allium skills"
-          echo "Vendored source: $allium_skills_dir"
-          echo "Local source: $allium_cli_skills_dir"
+          echo "Source: $allium_skills_dir"
           echo "Target: $target_root"
           echo
 
-          install_skill_dir() {
-            source_path="$1"
-            target_path="$2"
-            tmp_path="$target_root/.tmp-$(basename "$target_path")"
+          for skill in ${shellSkillList}; do
+            source_path="$allium_skills_dir/$skill"
+            target_path="$target_root/$skill"
+            tmp_path="$target_root/.tmp-$skill"
 
             if [ ! -f "$source_path/SKILL.md" ]; then
               echo "Error: expected $source_path/SKILL.md to exist." >&2
@@ -205,50 +216,12 @@ in
             mv "$tmp_path" "$target_path"
 
             echo "Installed $target_path"
-          }
-
-          for skill in ${shellSkillList}; do
-            source_path="$allium_skills_dir/$skill"
-            target_path="$target_root/$skill"
-            install_skill_dir "$source_path" "$target_path"
           done
-
-          found_local_cli_skill=0
-          for source_path in "$allium_cli_skills_dir"/*; do
-            if [ ! -d "$source_path" ]; then
-              continue
-            fi
-
-            if [ ! -f "$source_path/SKILL.md" ]; then
-              continue
-            fi
-
-            found_local_cli_skill=1
-            skill_name="$(basename "$source_path")"
-            install_skill_dir "$source_path" "$target_root/$skill_name"
-          done
-
-          if [ "$found_local_cli_skill" -eq 0 ]; then
-            echo "Error: expected at least one skill directory with SKILL.md in $allium_cli_skills_dir." >&2
-            exit 1
-          fi
-
-          # Install entrypoint skill with specsDir baked in via Jinja2
-          entrypoint_target="$target_root/allium-entrypoint"
-          entrypoint_tmp="$target_root/.tmp-allium-entrypoint"
-          rm -rf "$entrypoint_tmp"
-          cp -R "$allium_entrypoint_source" "$entrypoint_tmp"
-          chmod -R u+w "$entrypoint_tmp"
-          minijinja-cli "$entrypoint_tmp/SKILL.md" -Dspecs_dir="$specs_dir" -o "$entrypoint_tmp/SKILL.md"
-          rm -rf "$entrypoint_target"
-          mv "$entrypoint_tmp" "$entrypoint_target"
-          echo "Installed $entrypoint_target (specsDir=$specs_dir)"
 
           cat > "$target_root/.allium-devenv-source" <<SOURCE_EOF
 Generated by allium-install-codex-skills.
 Source module: devenv-allium
 Vendored Allium source: $allium_source
-Local Allium CLI skills source: $allium_cli_skills_dir
 
 Do not edit these generated skill copies directly.
 Update the shared devenv-allium repo, then rerun allium-install-codex-skills.
@@ -272,5 +245,6 @@ SOURCE_EOF
         fi
         unset _allium_marker
       '';
-  };
+    })
+  ]);
 }
