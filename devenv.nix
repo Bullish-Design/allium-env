@@ -80,7 +80,9 @@ let
 in
 {
   options.allium = {
-    enable = lib.mkEnableOption "Allium support";
+    enable = (lib.mkEnableOption "Allium support") // {
+      default = true;
+    };
 
     specsDir = lib.mkOption {
       type = lib.types.str;

@@ -31,7 +31,7 @@ Add this to the consuming project's `devenv.yaml`:
 ```yaml
 inputs:
   allium-dev:
-    url: github:YOUR_ORG/devenv-allium?ref=v0.3.2
+    url: github:YOUR_ORG/devenv-allium?ref=v0.3.3
     flake: false
 
 imports:
@@ -43,7 +43,7 @@ For a private GitHub repository over SSH:
 ```yaml
 inputs:
   allium-dev:
-    url: git+ssh://git@github.com/YOUR_ORG/devenv-allium.git?ref=v0.3.2
+    url: git+ssh://git@github.com/YOUR_ORG/devenv-allium.git?ref=v0.3.3
     flake: false
 
 imports:
@@ -121,7 +121,7 @@ If the Allium CLI release changes, update the pinned release URL and hash in `de
 Tag and push:
 
 ```bash
-git tag v0.3.2
+git tag v0.3.3
 git push origin main --tags
 ```
 
@@ -159,7 +159,7 @@ For unsupported platforms, consuming projects can:
 
 ## Configuration options
 
-- `allium.enable` - Enable Allium support
+- `allium.enable` - Enable Allium support (default: `true`)
 - `allium.specsDir` - Directory containing `.allium` spec files (default: `.scratch/specs`)
 - `allium.cli.enable` - Add pinned Allium CLI to shell (default: `true`)
 - `allium.cli.package` - Allium CLI package to use

@@ -50,7 +50,7 @@ The `devenv.nix` enables Allium with minimal configuration:
 
 Available options:
 
-- `allium.enable` - Enable Allium support (default: false)
+- `allium.enable` - Enable Allium support (default: true)
 - `allium.specsDir` - Directory containing `.allium` spec files (default: ".scratch/specs")
 - `allium.cli.enable` - Include Allium CLI in shell (default: true)
 - `allium.codexSkills.enable` - Provide allium-install-codex-skills script (default: true)
@@ -73,6 +73,6 @@ For production use, change to a GitHub URL:
 ```yaml
 inputs:
   allium-dev:
-    url: github:YOUR_ORG/devenv-allium?ref=v0.3.2
+    url: github:YOUR_ORG/devenv-allium?ref=v0.3.3
     flake: false
 ```
