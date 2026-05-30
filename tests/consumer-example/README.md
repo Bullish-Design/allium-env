@@ -73,6 +73,6 @@ For production use, change to a GitHub URL:
 ```yaml
 inputs:
   allium-dev:
-    url: github:YOUR_ORG/devenv-allium?ref=v0.2.0
+    url: github:YOUR_ORG/devenv-allium?ref=v0.3.0
     flake: false
 ```
