@@ -261,7 +261,32 @@ SOURCE_EOF
         '';
       };
 
-      enterShell = lib.mkIf cfg.codexSkills.autoInstall ''
+      enterShell = ''
+        _allium_target_dir=${lib.escapeShellArg cfg.codexSkills.targetDir}
+        case "$_allium_target_dir" in
+          /*)
+            _allium_target_root="$_allium_target_dir"
+            ;;
+          *)
+            if git rev-parse --show-toplevel >/dev/null 2>&1; then
+              _allium_repo_root="$(git rev-parse --show-toplevel)"
+              _allium_target_root="$_allium_repo_root/$_allium_target_dir"
+            else
+              _allium_target_root="$PWD/$_allium_target_dir"
+            fi
+            ;;
+        esac
+
+        if [ ! -f "$_allium_target_root/.allium-devenv-source" ] || [ ! -f "$_allium_target_root/allium-entrypoint/SKILL.md" ]; then
+          echo
+          echo "allium-env setup needed: skills are not installed in $_allium_target_root"
+          echo "Run: allium-install-codex-skills"
+          echo "Optional: set allium.codexSkills.autoInstall = true to install automatically on shell entry."
+          echo
+        fi
+
+        unset _allium_target_dir _allium_target_root _allium_repo_root
+      '' + lib.optionalString cfg.codexSkills.autoInstall ''
         # Auto-install Allium skills on shell entry.
         # Use a marker file to avoid re-running on every shell entry.
         _allium_marker="''${XDG_CACHE_HOME:-$HOME/.cache}/devenv-allium-skills-installed"
