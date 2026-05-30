@@ -261,8 +261,10 @@ SOURCE_EOF
         '';
       };
 
-      enterShell = ''
+      enterShell = lib.optionalString cfg.codexSkills.enable ''
         _allium_target_dir=${lib.escapeShellArg cfg.codexSkills.targetDir}
+        _allium_expected_vendored_source=${lib.escapeShellArg (toString alliumSource)}
+        _allium_expected_cli_source=${lib.escapeShellArg "${toString alliumCliSkillBundle}/skills"}
         case "$_allium_target_dir" in
           /*)
             _allium_target_root="$_allium_target_dir"
@@ -277,7 +279,16 @@ SOURCE_EOF
             ;;
         esac
 
+        _allium_needs_install=0
         if [ ! -f "$_allium_target_root/.allium-devenv-source" ] || [ ! -f "$_allium_target_root/allium-entrypoint/SKILL.md" ]; then
+          _allium_needs_install=1
+        elif ! grep -Fq "Vendored Allium source: $_allium_expected_vendored_source" "$_allium_target_root/.allium-devenv-source"; then
+          _allium_needs_install=1
+        elif ! grep -Fq "Local Allium CLI skills source: $_allium_expected_cli_source" "$_allium_target_root/.allium-devenv-source"; then
+          _allium_needs_install=1
+        fi
+
+        if [ "$_allium_needs_install" -eq 1 ]; then
           echo
           echo "allium-env setup needed: skills are not installed in $_allium_target_root"
           echo "Run: allium-install-codex-skills"
@@ -286,16 +297,13 @@ SOURCE_EOF
         fi
 
         unset _allium_target_dir _allium_target_root _allium_repo_root
-      '' + lib.optionalString cfg.codexSkills.autoInstall ''
+        unset _allium_expected_vendored_source _allium_expected_cli_source
+      '' + lib.optionalString (cfg.codexSkills.enable && cfg.codexSkills.autoInstall) ''
         # Auto-install Allium skills on shell entry.
-        # Use a marker file to avoid re-running on every shell entry.
-        _allium_marker="''${XDG_CACHE_HOME:-$HOME/.cache}/devenv-allium-skills-installed"
-        if [ ! -f "$_allium_marker" ]; then
+        if [ "$_allium_needs_install" -eq 1 ]; then
           allium-install-codex-skills
-          mkdir -p "''${XDG_CACHE_HOME:-$HOME/.cache}"
-          touch "$_allium_marker"
         fi
-        unset _allium_marker
+        unset _allium_needs_install
       '';
   };
 }
