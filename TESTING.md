@@ -65,8 +65,8 @@ This document summarizes the tests performed on the `devenv-allium` shared repos
   - `allium-analyse` ✓
   - `allium-install-codex-skills` ✓
 
-### ✅ Skill Installation
-- **Test**: `allium-install-codex-skills` installs skills to `.agents/skills`
+### ✅ Skill + Prompt Installation
+- **Test**: `allium-install-codex-skills` installs skills to `.agents/skills` and prompts to `.agents/prompts`
 - **Result**: ✓ Success
 - **Installed Skills**:
   ```
@@ -126,7 +126,7 @@ This document summarizes the tests performed on the `devenv-allium` shared repos
   - Only throws when `allium.cli.enable = true` on an unsupported platform
 
 ### ✅ Auto-Install Option
-- **Test**: `allium.codexSkills.autoInstall` option is available
+- **Test**: `allium.codexSkills.autoInstall` option is available for script-driven skill/prompt installation
 - **Result**: ✓ Success (verified in code)
 - **Details**:
   - Option defaults to `false`
@@ -155,7 +155,7 @@ All core functionality has been verified and works as anticipated:
 2. ✓ Consumer projects can import and configure the module
 3. ✓ Allium CLI is correctly packaged and available
 4. ✓ Helper scripts (check, analyse, install-codex-skills) work correctly
-5. ✓ Skills are successfully installed to consumer projects
+5. ✓ Skills and prompts are successfully installed to consumer projects
 6. ✓ Module configuration options are properly gated
 7. ✓ Declarative setup via `allium-setup` script works smoothly
 

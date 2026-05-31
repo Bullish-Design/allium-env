@@ -27,11 +27,14 @@ which allium-check
 which allium-analyse
 which allium-install-codex-skills
 
-# Install Allium skills
+# Install Allium skills and prompts
 allium-install-codex-skills
 
 # Verify skills were installed
 find .agents/skills -maxdepth 2 -name SKILL.md | sort
+
+# Verify prompts were installed
+find .agents/prompts -maxdepth 1 -type f -name "*.md" | sort
 
 # Validate the example spec
 allium-check
@@ -56,6 +59,8 @@ Available options:
 - `allium.codexSkills.enable` - Provide allium-install-codex-skills script (default: true)
 - `allium.codexSkills.autoInstall` - Auto-install skills on shell entry (default: false)
 - `allium.codexSkills.targetDir` - Where to install skills (default: ".agents/skills")
+- `allium.codexPrompts.enable` - Install prompts (default: true)
+- `allium.codexPrompts.targetDir` - Where to install prompts (default: ".agents/prompts")
 
 ## URL Format
 

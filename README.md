@@ -6,6 +6,8 @@ This repo owns:
 
 - the vendored Allium source under `.vendor/allium`
 - bundled local agent skill bundle under `.skills/allium-cli/skills`
+- bundled agent prompts under `.agents/prompts`
+- installer/check shell scripts under `scripts/`
 - the pinned Allium CLI package definition
 - reusable devenv scripts:
   - `allium-setup` - initialize or update vendored Allium
@@ -61,7 +63,7 @@ Then enable the module in the consuming project's `devenv.nix`:
 }
 ```
 
-Enter the shell and install skills:
+Enter the shell and install skills and prompts:
 
 ```bash
 devenv shell
@@ -72,6 +74,7 @@ This installs:
 
 - selected vendored skills from `.vendor/allium/skills`
 - bundled local CLI skills from `.skills/allium-cli/skills`
+- bundled prompts from `.agents/prompts`
 
 Run Allium checks:
 
@@ -80,9 +83,9 @@ allium-check
 allium-analyse
 ```
 
-## Optional: Automatic skill installation
+## Optional: Automatic skill and prompt installation
 
-Enable `autoInstall` to have skills install automatically on shell entry:
+Enable `autoInstall` to have skills and prompts install automatically on shell entry:
 
 ```nix
 { ... }:
@@ -167,3 +170,5 @@ For unsupported platforms, consuming projects can:
 - `allium.codexSkills.autoInstall` - Auto-install skills on shell entry (default: `false`)
 - `allium.codexSkills.targetDir` - Where to install skills (default: `.agents/skills`)
 - `allium.codexSkills.skills` - List of vendored skill directories to install from `.vendor/allium/skills`
+- `allium.codexPrompts.enable` - Install bundled prompts (default: `true`)
+- `allium.codexPrompts.targetDir` - Where to install prompts (default: `.agents/prompts`)

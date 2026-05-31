@@ -6,6 +6,9 @@ let
   alliumSource = ./.vendor/allium;
   alliumCliSkillBundle = ./.skills/allium-cli;
   alliumEntrypointSkill = ./.skills/allium-entrypoint;
+  alliumPromptBundle = ./.agents;
+  installCodexAssetsScript = ./scripts/install-codex-assets.sh;
+  checkCodexAssetsScript = ./scripts/check-codex-assets-installed.sh;
 
   defaultAlliumSkills = [
     "allium"
@@ -16,8 +19,7 @@ let
     "weed"
   ];
 
-  shellSkillList =
-    builtins.concatStringsSep " " (map lib.escapeShellArg cfg.codexSkills.skills);
+  shellSkillList = builtins.concatStringsSep " " (map lib.escapeShellArg cfg.codexSkills.skills);
 
   # Pinned Allium CLI release.
   # Add entries for additional systems as needed.
@@ -140,6 +142,20 @@ in
         description = "Skill directories to copy from the vendored Allium source.";
       };
     };
+
+    codexPrompts = {
+      enable = lib.mkOption {
+        type = lib.types.bool;
+        default = true;
+        description = "Whether to install bundled Allium prompts into the project.";
+      };
+
+      targetDir = lib.mkOption {
+        type = lib.types.str;
+        default = ".agents/prompts";
+        description = "Directory, relative to the Git root unless absolute, where prompts should be installed.";
+      };
+    };
   };
 
   config = lib.mkIf cfg.enable {
@@ -148,160 +164,44 @@ in
     ];
 
     scripts.allium-install-codex-skills = lib.mkIf cfg.codexSkills.enable {
-        description = "Install Allium skills into the current repository.";
+        description = "Install Allium skills (and optional prompts) into the current repository.";
         packages = [
+          pkgs.bash
           pkgs.git
           pkgs.coreutils
           pkgs.minijinja
         ];
 
         exec = ''
-          set -euo pipefail
-
-          if ! git rev-parse --show-toplevel >/dev/null 2>&1; then
-            echo "Error: run this from inside a Git repository." >&2
-            exit 1
-          fi
-
-          repo_root="$(git rev-parse --show-toplevel)"
-          allium_source=${lib.escapeShellArg (toString alliumSource)}
-          allium_skills_dir="$allium_source/skills"
-          allium_cli_skill_bundle=${lib.escapeShellArg (toString alliumCliSkillBundle)}
-          allium_cli_skills_dir="$allium_cli_skill_bundle/skills"
-          allium_entrypoint_source=${lib.escapeShellArg (toString alliumEntrypointSkill)}
-          specs_dir=${lib.escapeShellArg cfg.specsDir}
-          codex_skills_dir=${lib.escapeShellArg cfg.codexSkills.targetDir}
-
-          case "$codex_skills_dir" in
-            /*)
-              target_root="$codex_skills_dir"
-              ;;
-            *)
-              target_root="$repo_root/$codex_skills_dir"
-              ;;
-          esac
-
-          mkdir -p "$target_root"
-
-          echo "Installing Allium skills"
-          echo "Vendored source: $allium_skills_dir"
-          echo "Local source: $allium_cli_skills_dir"
-          echo "Target: $target_root"
-          echo
-
-          install_skill_dir() {
-            source_path="$1"
-            target_path="$2"
-            tmp_path="$target_root/.tmp-$(basename "$target_path")"
-
-            if [ ! -f "$source_path/SKILL.md" ]; then
-              echo "Error: expected $source_path/SKILL.md to exist." >&2
-              exit 1
-            fi
-
-            rm -rf "$tmp_path"
-            cp -R "$source_path" "$tmp_path"
-            chmod -R u+w "$tmp_path"
-
-            rm -rf "$target_path"
-            mv "$tmp_path" "$target_path"
-
-            echo "Installed $target_path"
-          }
-
-          for skill in ${shellSkillList}; do
-            source_path="$allium_skills_dir/$skill"
-            target_path="$target_root/$skill"
-            install_skill_dir "$source_path" "$target_path"
-          done
-
-          found_local_cli_skill=0
-          for source_path in "$allium_cli_skills_dir"/*; do
-            if [ ! -d "$source_path" ]; then
-              continue
-            fi
-
-            if [ ! -f "$source_path/SKILL.md" ]; then
-              continue
-            fi
-
-            found_local_cli_skill=1
-            skill_name="$(basename "$source_path")"
-            install_skill_dir "$source_path" "$target_root/$skill_name"
-          done
-
-          if [ "$found_local_cli_skill" -eq 0 ]; then
-            echo "Error: expected at least one skill directory with SKILL.md in $allium_cli_skills_dir." >&2
-            exit 1
-          fi
-
-          # Install entrypoint skill with specsDir baked in via Jinja2
-          entrypoint_target="$target_root/allium-entrypoint"
-          entrypoint_tmp="$target_root/.tmp-allium-entrypoint"
-          rm -rf "$entrypoint_tmp"
-          cp -R "$allium_entrypoint_source" "$entrypoint_tmp"
-          chmod -R u+w "$entrypoint_tmp"
-          minijinja-cli "$entrypoint_tmp/SKILL.md" -Dspecs_dir="$specs_dir" -o "$entrypoint_tmp/SKILL.md"
-          rm -rf "$entrypoint_target"
-          mv "$entrypoint_tmp" "$entrypoint_target"
-          echo "Installed $entrypoint_target (specsDir=$specs_dir)"
-
-          cat > "$target_root/.allium-devenv-source" <<SOURCE_EOF
-Generated by allium-install-codex-skills.
-Source module: devenv-allium
-Vendored Allium source: $allium_source
-Local Allium CLI skills source: $allium_cli_skills_dir
-
-Do not edit these generated skill copies directly.
-Update the shared devenv-allium repo, then rerun allium-install-codex-skills.
-SOURCE_EOF
-
-          echo
-          echo "Allium skills installed."
-          echo
-          echo "If another editor reads skills from a different directory, symlink from $target_root."
+          ALLIUM_SOURCE=${lib.escapeShellArg (toString alliumSource)} \
+          ALLIUM_SKILLS_DIR=${lib.escapeShellArg "${toString alliumSource}/skills"} \
+          ALLIUM_CLI_SKILLS_DIR=${lib.escapeShellArg "${toString alliumCliSkillBundle}/skills"} \
+          ALLIUM_ENTRYPOINT_SOURCE=${lib.escapeShellArg (toString alliumEntrypointSkill)} \
+          ALLIUM_PROMPTS_DIR=${lib.escapeShellArg "${toString alliumPromptBundle}/prompts"} \
+          ALLIUM_SPECS_DIR=${lib.escapeShellArg cfg.specsDir} \
+          ALLIUM_CODEX_SKILLS_DIR=${lib.escapeShellArg cfg.codexSkills.targetDir} \
+          ALLIUM_CODEX_PROMPTS_DIR=${lib.escapeShellArg cfg.codexPrompts.targetDir} \
+          ALLIUM_SHELL_SKILL_LIST=${lib.escapeShellArg shellSkillList} \
+          ALLIUM_PROMPTS_ENABLED=${if cfg.codexPrompts.enable then "1" else "0"} \
+          ${pkgs.bash}/bin/bash ${lib.escapeShellArg (toString installCodexAssetsScript)}
         '';
       };
 
       enterShell = lib.optionalString cfg.codexSkills.enable ''
-        _allium_target_dir=${lib.escapeShellArg cfg.codexSkills.targetDir}
-        _allium_expected_vendored_source=${lib.escapeShellArg (toString alliumSource)}
-        _allium_expected_cli_source=${lib.escapeShellArg "${toString alliumCliSkillBundle}/skills"}
-        case "$_allium_target_dir" in
-          /*)
-            _allium_target_root="$_allium_target_dir"
-            ;;
-          *)
-            if git rev-parse --show-toplevel >/dev/null 2>&1; then
-              _allium_repo_root="$(git rev-parse --show-toplevel)"
-              _allium_target_root="$_allium_repo_root/$_allium_target_dir"
-            else
-              _allium_target_root="$PWD/$_allium_target_dir"
-            fi
-            ;;
-        esac
-
         _allium_needs_install=0
-        if [ ! -f "$_allium_target_root/.allium-devenv-source" ] || [ ! -f "$_allium_target_root/allium-entrypoint/SKILL.md" ]; then
-          _allium_needs_install=1
-        elif ! grep -Fq "Vendored Allium source: $_allium_expected_vendored_source" "$_allium_target_root/.allium-devenv-source"; then
-          _allium_needs_install=1
-        elif ! grep -Fq "Local Allium CLI skills source: $_allium_expected_cli_source" "$_allium_target_root/.allium-devenv-source"; then
+        if ! \
+          ALLIUM_CODEX_SKILLS_DIR=${lib.escapeShellArg cfg.codexSkills.targetDir} \
+          ALLIUM_CODEX_PROMPTS_DIR=${lib.escapeShellArg cfg.codexPrompts.targetDir} \
+          ALLIUM_EXPECTED_VENDORED_SOURCE=${lib.escapeShellArg (toString alliumSource)} \
+          ALLIUM_EXPECTED_CLI_SOURCE=${lib.escapeShellArg "${toString alliumCliSkillBundle}/skills"} \
+          ALLIUM_EXPECTED_PROMPTS_SOURCE=${lib.escapeShellArg "${toString alliumPromptBundle}/prompts"} \
+          ALLIUM_PROMPTS_ENABLED=${if cfg.codexPrompts.enable then "1" else "0"} \
+          ${pkgs.bash}/bin/bash ${lib.escapeShellArg (toString checkCodexAssetsScript)}
+        then
           _allium_needs_install=1
         fi
-
-        if [ "$_allium_needs_install" -eq 1 ]; then
-          echo
-          echo "allium-env setup needed: skills are not installed in $_allium_target_root"
-          echo "Run: allium-install-codex-skills"
-          echo "Optional: set allium.codexSkills.autoInstall = true to install automatically on shell entry."
-          echo
-        fi
-
-        unset _allium_target_dir _allium_target_root _allium_repo_root
-        unset _allium_expected_vendored_source _allium_expected_cli_source
       '' + lib.optionalString (cfg.codexSkills.enable && cfg.codexSkills.autoInstall) ''
-        # Auto-install Allium skills on shell entry.
+        # Auto-install Allium skills (and prompts when enabled) on shell entry.
         if [ "$_allium_needs_install" -eq 1 ]; then
           allium-install-codex-skills
         fi
