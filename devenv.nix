@@ -41,6 +41,11 @@ let
   system = pkgs.stdenv.hostPlatform.system;
   systemSupported = builtins.hasAttr system alliumCliRelease;
 
+  # The conforming `alliman` CLI lives in this repo (src/alliman). When the module is consumed
+  # from elsewhere the source isn't at the project root, so the dev venv is only wired up when
+  # the source is actually present; consumers pin the published package downstream instead.
+  alliManSrcPresent = builtins.pathExists (config.devenv.root + "/src/alliman");
+
   alliumCli =
     if systemSupported then
       pkgs.stdenv.mkDerivation {
@@ -162,6 +167,30 @@ in
     packages = lib.optionals (cfg.cli.enable && systemSupported) [
       cfg.cli.package
     ];
+
+    # Export the module's effective config so `alliman doctor` verifies the *actual* install
+    # target/skills/prompts (not just its built-in defaults). These mirror the inline env the
+    # installer and check scripts receive; exporting them into the shell lets doctor agree with
+    # the module even when a consumer customizes targetDir / skills / prompts.
+    env = {
+      ALLIUM_CODEX_SKILLS_DIR = cfg.codexSkills.targetDir;
+      ALLIUM_CODEX_PROMPTS_DIR = cfg.codexPrompts.targetDir;
+      ALLIUM_SHELL_SKILL_LIST = shellSkillList;
+      ALLIUM_PROMPTS_ENABLED = if cfg.codexPrompts.enable then "1" else "0";
+      ALLIUM_EXPECTED_VENDORED_SOURCE = toString alliumSource;
+    };
+
+    # Put the family-conforming `alliman` CLI (doctor / install-skills / init) on PATH via an
+    # editable install of this repo's package, so `repoman doctor` can call `alliman doctor`.
+    languages.python = lib.mkIf alliManSrcPresent {
+      enable = true;
+      version = "3.13";
+      uv.enable = true;
+      venv = {
+        enable = true;
+        requirements = "-e ${config.devenv.root}[dev]";
+      };
+    };
 
     scripts.allium-install-codex-skills = lib.mkIf cfg.codexSkills.enable {
         description = "Install Allium skills (and optional prompts) into the current repository.";
