@@ -312,3 +312,52 @@ In the **repoman** repo (separate change): rename the `spec` registry entry's `c
 | Name collision with the `allium` binary | Manager is `alliman`; never shadow `allium`. Update RepoMan registry. |
 | Partial install passes the old bash check | `doctor` strengthens it: every expected skill dir must have `SKILL.md`, not just the manifest. |
 | `template-py` leftovers | Remove `src/template_py`; fix mypy/coverage targets to `alliman`. |
+
+## Discrepancies found during implementation (this pass)
+
+Confirmed: the exact `ALLIUM_*` env-var names in the guide match `devenv.nix` and both scripts
+verbatim — `ALLIUM_CODEX_SKILLS_DIR`, `ALLIUM_CODEX_PROMPTS_DIR`, `ALLIUM_SHELL_SKILL_LIST`,
+`ALLIUM_PROMPTS_ENABLED`, `ALLIUM_EXPECTED_VENDORED_SOURCE`. The defaults in `doctor.py` match the
+module option defaults (`.agents/skills`, `.agents/prompts`, the six vendored skills, prompts on).
+
+1. **The `ALLIUM_*` vars were NOT exported into the interactive shell.** The guide assumed
+   "already exported by the module's installer/enterShell wiring." In fact `devenv.nix` only set
+   them *inline* as a prefix on the installer-script `exec` and the `enterShell` check invocation —
+   they were absent from the shell where `alliman doctor` actually runs. The effect: `doctor` fell
+   back to its built-in defaults (fine for this repo, wrong for any consumer that customizes
+   `targetDir`/`skills`/`prompts`), and the optional `manifest: vendored source` check was silently
+   **skipped** because `ALLIUM_EXPECTED_VENDORED_SOURCE` was unset. **Fix applied:** added an `env`
+   block to `devenv.nix` (gated under `cfg.enable`) exporting `ALLIUM_CODEX_SKILLS_DIR`,
+   `ALLIUM_CODEX_PROMPTS_DIR`, `ALLIUM_SHELL_SKILL_LIST`, `ALLIUM_PROMPTS_ENABLED`, and
+   `ALLIUM_EXPECTED_VENDORED_SOURCE = toString alliumSource`. Now `doctor` reflects the module's
+   real config and the vendored-source check is a live hard check (11 checks here, not 10).
+
+2. **In this repo the prompts source bundle and the prompts install target are the same path.**
+   `ALLIUM_PROMPTS_DIR` (source) = `.agents/prompts` and `codexPrompts.targetDir` (target) =
+   `.agents/prompts`. So `doctor`'s `prompts installed` check is satisfied by the *source* itself,
+   and there is no way to produce a clean "prompts missing" before-state without deleting the
+   committed source. This is a repo quirk, not a `doctor` bug; the missing-prompts path is covered
+   by the unit test (`tmp_path` tree), not the live before/after demo.
+
+3. **The committed `.agents/skills/.allium-devenv-source` records `/nix/store/...` paths** (it was
+   generated when the module was consumed as a flake input). A local working-dir `install-skills`
+   writes the repo path instead, so `ALLIUM_EXPECTED_VENDORED_SOURCE` (= `toString alliumSource`,
+   the working-dir path in impure local eval) only matches after a fresh local `install-skills`.
+   Installer and `doctor` always agree within a single context — both derive from `toString
+   alliumSource` — so this is expected drift in the checked-in artifact, not a `doctor` bug. The
+   live before/after demo therefore runs its own `install-skills`; the checked-in manifest is left
+   untouched.
+
+4. **`init` is self-contained.** copyroom has no `init` command to mirror, so `init.py` follows the
+   guide: it prints the devenv import snippet + next steps and ends with the *"see the `repoman`
+   skill"* deferral footer. No competing skill is written; `--force` is accepted but currently a
+   no-op (nothing is scaffolded to overwrite).
+
+5. **No `src/template_py` to delete** — it was never committed (only the `template-py`
+   `pyproject.toml` stub existed). The stub was replaced and mypy/pytest targets repointed to
+   `alliman`.
+
+6. **Dev venv is gated on the source being present.** `languages.python` (editable install of the
+   repo) is wired only when `src/alliman` exists at `config.devenv.root`, so importing the module
+   into a consumer that lacks the source doesn't try to editable-install the wrong project; the
+   `[dev]` extra is included so `pytest`/`ruff` are on PATH in this repo's shell.
