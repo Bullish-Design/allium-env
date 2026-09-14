@@ -225,7 +225,13 @@ __marimo__/
 # Agent-files convention (copyroom docs/user/agent-files.md): `.agents/` is
 # dual-use. `.agents/skills/` IS tracked, as are AGENTS.md and CLAUDE.md; the
 # rest of `.agents/` is platform/tool runtime state and stays ignored.
+#
+# `.agents/prompts/` is the exception. It holds six authored allium prompts, not
+# runtime state. They lived in the central devman overlay until this repository
+# left the plane, and the overlay was their only home, so they are tracked here.
 .agents/**
+!.agents/prompts/
+!.agents/prompts/**
 !.agents/skills/
 !.agents/skills/**
 !AGENTS.md
